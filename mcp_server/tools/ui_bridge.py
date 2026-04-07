@@ -465,13 +465,13 @@ def register(mcp: FastMCP) -> None:
         level: str = "",
         instance: str | None = None,
     ) -> list[dict[str, str]]:
-        """Get recent ComfyUI server log entries.
+        """Get recent ComfyUI server log entries (stdout + stderr, including tracebacks).
 
-        Reads the ComfyUI log file and returns parsed entries.
-        Useful for debugging execution issues, import errors, and node problems.
+        Parses the ComfyUI log file and groups multi-line entries like Python
+        tracebacks into single entries so stack traces are never split.
 
         Args:
-            lines: Number of recent lines to return (default 50, max 200).
+            lines: Number of recent entries to return (default 50, max 200).
             level: Filter by level: "error", "warning", "info", or "" for all.
             instance: Target ComfyUI instance name.
         """
@@ -493,27 +493,75 @@ def register(mcp: FastMCP) -> None:
         except Exception as exc:
             return [{"level": "error", "message": f"Cannot read log: {exc}"}]
 
-        # Parse log lines
+        # ── Phase 1: Group lines into logical entries ─────────────
+        # A new entry starts with [timestamp] or a non-indented line that
+        # doesn't look like a continuation (traceback lines, File "...", etc.)
         log_pattern = re.compile(r'^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+)\]\s*(.*)')
-        entries = []
+        traceback_start = re.compile(r'^Traceback \(most recent call last\)')
+        continuation = re.compile(r'^(\s+File\s"|  |\s+raise\s|\s+return\s|\s+at\s|\s+\.\.\.|\s+\^)')
 
-        for line in all_lines[-lines * 3:]:  # Read extra to account for filtering
-            match = log_pattern.match(line)
-            if match:
-                timestamp = match.group(1)
-                message = match.group(2)
+        raw_entries: list[dict[str, Any]] = []
+        current: dict[str, Any] | None = None
+
+        for line in all_lines:
+            ts_match = log_pattern.match(line)
+
+            if ts_match:
+                # New timestamped entry
+                if current:
+                    raw_entries.append(current)
+                current = {"timestamp": ts_match.group(1), "lines": [ts_match.group(2)]}
+
+            elif traceback_start.match(line):
+                # Start of a traceback block — always error, may follow a timestamped line
+                if current:
+                    raw_entries.append(current)
+                current = {"timestamp": "", "lines": [line]}
+
+            elif continuation.match(line) and current:
+                # Continuation of previous entry (indented traceback lines, etc.)
+                current["lines"].append(line)
+
+            elif line.strip() == "":
+                continue  # Skip blank lines
+
             else:
-                timestamp = ""
-                message = line.strip()
+                # Non-indented line without timestamp — could be an error message
+                # following a traceback, or a standalone log line
+                if current and (
+                    any("Traceback" in l for l in current["lines"])
+                    or any("File " in l for l in current["lines"][-3:])
+                ):
+                    # Append to current traceback (the final error message)
+                    current["lines"].append(line)
+                else:
+                    if current:
+                        raw_entries.append(current)
+                    current = {"timestamp": "", "lines": [line]}
 
-            if not message:
-                continue
+        if current:
+            raw_entries.append(current)
+
+        # ── Phase 2: Classify and filter ──────────────────────────
+        entries = []
+        for entry in raw_entries[-lines * 3:]:
+            message = "\n".join(entry["lines"])
+            msg_lower = message.lower()
 
             # Detect level
-            msg_lower = message.lower()
-            if "error" in msg_lower or "exception" in msg_lower or "traceback" in msg_lower or "failed" in msg_lower:
+            is_error = (
+                "traceback" in msg_lower
+                or "error" in msg_lower
+                or "exception" in msg_lower
+                or "cannot import" in msg_lower
+                or "modulenotfounderror" in msg_lower
+                or "failed" in msg_lower
+            )
+            is_warning = "warning" in msg_lower or "warn" in msg_lower or "deprecat" in msg_lower
+
+            if is_error:
                 entry_level = "error"
-            elif "warning" in msg_lower or "warn" in msg_lower:
+            elif is_warning:
                 entry_level = "warning"
             else:
                 entry_level = "info"
@@ -523,8 +571,8 @@ def register(mcp: FastMCP) -> None:
 
             entries.append({
                 "level": entry_level,
-                "timestamp": timestamp,
-                "message": message[:500],  # Truncate very long lines
+                "timestamp": entry["timestamp"],
+                "message": message[:2000],  # Allow longer messages for tracebacks
             })
 
-        return entries[-lines:]  # Return last N after filtering
+        return entries[-lines:]
