@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+
+# User-specific config (contains API tokens)
+mcp_server/hub_config.json
+
+# Runtime logs
+mcp_server/activity.jsonl

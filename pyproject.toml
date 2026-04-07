@@ -1,0 +1,14 @@
+[project]
+name = "comfyui-mcp-hub"
+version = "0.1.0"
+description = "MCP server and control panel for ComfyUI — expose local ComfyUI capabilities to AI agents"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.0.0",
+    "aiohttp>=3.9.0",
+    "websockets>=12.0",
+]
+
+[tool.comfy]
+PublisherId = "comfyui-mcp-hub"
+DisplayName = "MCP Hub"
