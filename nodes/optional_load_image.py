@@ -31,11 +31,16 @@ class OptionalLoadImage:
     FUNCTION = "load_image"
 
     def load_image(self, image):
-        if image == "none":
+        if image == "none" or not image:
             from comfy_execution.graph_utils import ExecutionBlocker
             return (ExecutionBlocker(None), ExecutionBlocker(None))
 
         image_path = folder_paths.get_annotated_filepath(image)
+
+        # Guard against directory paths or missing files
+        if not os.path.isfile(image_path):
+            from comfy_execution.graph_utils import ExecutionBlocker
+            return (ExecutionBlocker(None), ExecutionBlocker(None))
         img = node_helpers.pillow(Image.open, image_path)
 
         output_images = []
@@ -86,9 +91,11 @@ class OptionalLoadImage:
 
     @classmethod
     def IS_CHANGED(s, image):
-        if image == "none":
+        if image == "none" or not image:
             return "none"
         image_path = folder_paths.get_annotated_filepath(image)
+        if not os.path.isfile(image_path):
+            return "none"
         m = hashlib.sha256()
         with open(image_path, "rb") as f:
             m.update(f.read())
@@ -96,7 +103,7 @@ class OptionalLoadImage:
 
     @classmethod
     def VALIDATE_INPUTS(s, image):
-        if image == "none":
+        if image == "none" or not image:
             return True
         if not folder_paths.exists_annotated_filepath(image):
             return "Invalid image file: {}".format(image)
