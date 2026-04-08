@@ -160,6 +160,80 @@ const handlers = {
     return { status: "arranged" };
   },
 
+  move_node(data) {
+    const node = app.graph.getNodeById(parseInt(data.node_id));
+    if (!node) return { error: `Node ${data.node_id} not found` };
+    node.pos = [data.x ?? node.pos[0], data.y ?? node.pos[1]];
+    app.graph.setDirtyCanvas(true, true);
+    return { status: "moved", node_id: node.id, pos: node.pos };
+  },
+
+  resize_node(data) {
+    const node = app.graph.getNodeById(parseInt(data.node_id));
+    if (!node) return { error: `Node ${data.node_id} not found` };
+    if (data.width && data.height) {
+      node.size = [data.width, data.height];
+    } else if (typeof node.computeSize === "function") {
+      node.size = node.computeSize();
+    }
+    app.graph.setDirtyCanvas(true, true);
+    return { status: "resized", node_id: node.id, size: node.size };
+  },
+
+  collapse_node(data) {
+    const node = app.graph.getNodeById(parseInt(data.node_id));
+    if (!node) return { error: `Node ${data.node_id} not found` };
+    node.flags = node.flags || {};
+    node.flags.collapsed = data.collapsed !== false;
+    app.graph.setDirtyCanvas(true, true);
+    return { status: node.flags.collapsed ? "collapsed" : "expanded", node_id: node.id };
+  },
+
+  align_nodes(data) {
+    const nodeIds = (data.node_ids || []).map(id => parseInt(id));
+    const nodes = nodeIds.map(id => app.graph.getNodeById(id)).filter(Boolean);
+    if (nodes.length < 2) return { error: "Need at least 2 nodes to align" };
+    const axis = data.axis || "horizontal";
+    const spacing = data.spacing ?? 30;
+
+    if (axis === "horizontal") {
+      // Align nodes in a horizontal row, same Y, evenly spaced on X
+      const baseY = nodes[0].pos[1];
+      let currentX = nodes[0].pos[0];
+      for (const n of nodes) {
+        n.pos = [currentX, baseY];
+        currentX += (n.size?.[0] || 200) + spacing;
+      }
+    } else {
+      // Align nodes in a vertical column, same X, evenly spaced on Y
+      const baseX = nodes[0].pos[0];
+      let currentY = nodes[0].pos[1];
+      for (const n of nodes) {
+        n.pos = [baseX, currentY];
+        currentY += (n.size?.[1] || 100) + spacing;
+      }
+    }
+    app.graph.setDirtyCanvas(true, true);
+    return { status: "aligned", axis, count: nodes.length };
+  },
+
+  fit_view() {
+    try {
+      if (app.canvas && typeof app.canvas.ds?.reset === "function") {
+        app.canvas.ds.reset();
+      }
+      if (typeof app.canvas.centerOnGraph === "function") {
+        app.canvas.centerOnGraph();
+      } else if (typeof app.canvas.setZoom === "function") {
+        app.canvas.setZoom(1);
+      }
+      app.graph.setDirtyCanvas(true, true);
+      return { status: "fitted" };
+    } catch (e) {
+      return { error: `Fit view failed: ${e.message}` };
+    }
+  },
+
   group_nodes(data) {
     try {
       const nodeIds = (data.node_ids || []).map(id => parseInt(id));

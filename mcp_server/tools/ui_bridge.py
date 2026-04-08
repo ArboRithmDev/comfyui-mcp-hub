@@ -295,6 +295,93 @@ def register(mcp: FastMCP) -> None:
             "node_ids": node_ids, "title": title, "color": color,
         }, instance=instance)
 
+    @mcp.tool()
+    async def move_node(
+        node_id: int,
+        x: float,
+        y: float,
+        instance: str | None = None,
+    ) -> dict[str, Any]:
+        """Move a node to a specific position on the canvas.
+
+        Args:
+            node_id: The ID of the node to move.
+            x: New X position.
+            y: New Y position.
+            instance: Target ComfyUI instance name.
+        """
+        return await _ui_command("move_node", {
+            "node_id": node_id, "x": x, "y": y,
+        }, instance=instance)
+
+    @mcp.tool()
+    async def resize_node(
+        node_id: int,
+        width: float = 0,
+        height: float = 0,
+        instance: str | None = None,
+    ) -> dict[str, Any]:
+        """Resize a node. If width/height are 0, auto-fits to content.
+
+        Args:
+            node_id: The ID of the node to resize.
+            width: New width in pixels (0 = auto-fit).
+            height: New height in pixels (0 = auto-fit).
+            instance: Target ComfyUI instance name.
+        """
+        return await _ui_command("resize_node", {
+            "node_id": node_id, "width": width, "height": height,
+        }, instance=instance)
+
+    @mcp.tool()
+    async def collapse_node(
+        node_id: int,
+        collapsed: bool = True,
+        instance: str | None = None,
+    ) -> dict[str, Any]:
+        """Collapse or expand a node on the canvas.
+
+        Collapsed nodes show only their title bar, saving space.
+
+        Args:
+            node_id: The ID of the node.
+            collapsed: True to collapse, False to expand.
+            instance: Target ComfyUI instance name.
+        """
+        return await _ui_command("collapse_node", {
+            "node_id": node_id, "collapsed": collapsed,
+        }, instance=instance)
+
+    @mcp.tool()
+    async def align_nodes(
+        node_ids: list[int],
+        axis: str = "horizontal",
+        spacing: int = 30,
+        instance: str | None = None,
+    ) -> dict[str, Any]:
+        """Align a list of nodes horizontally or vertically with even spacing.
+
+        Args:
+            node_ids: List of node IDs to align, in order.
+            axis: "horizontal" (same Y, spaced on X) or "vertical" (same X, spaced on Y).
+            spacing: Pixels between nodes (default 30).
+            instance: Target ComfyUI instance name.
+        """
+        return await _ui_command("align_nodes", {
+            "node_ids": node_ids, "axis": axis, "spacing": spacing,
+        }, instance=instance)
+
+    @mcp.tool()
+    async def fit_view(
+        instance: str | None = None,
+    ) -> dict[str, Any]:
+        """Reset the canvas view to fit all nodes on screen.
+
+        Args:
+            instance: Target ComfyUI instance name.
+        """
+        return await _ui_command("fit_view", instance=instance)
+
     # ── Execution ─────────────────────────────────────────────────────
 
     @mcp.tool()
