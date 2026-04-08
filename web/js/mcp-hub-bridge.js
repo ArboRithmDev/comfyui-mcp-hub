@@ -274,10 +274,43 @@ const handlers = {
     }
   },
 
-  execute_current() {
+  async execute_current() {
+    // Use app.queuePrompt() which triggers the full extension hook chain
+    // (cg-use-everywhere, rgthree GetNode/SetNode resolution, etc.)
+    // Then capture the prompt_id from the API response.
     try {
-      app.queuePrompt();
-      return { status: "queued" };
+      // Listen for the prompt response to capture the prompt_id
+      const promptId = await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error("Queue timeout — no response within 10s")), 10000);
+
+        // Intercept the fetch to /prompt or /api/prompt to grab the response
+        const origFetch = window.fetch;
+        window.fetch = async function(...args) {
+          const resp = await origFetch.apply(this, args);
+          const url = typeof args[0] === "string" ? args[0] : args[0]?.url || "";
+          if (url.includes("/prompt") && !url.includes("/mcp-hub")) {
+            try {
+              const clone = resp.clone();
+              const data = await clone.json();
+              if (data.prompt_id) {
+                clearTimeout(timeout);
+                window.fetch = origFetch;
+                resolve(data.prompt_id);
+              }
+            } catch (_) {}
+          }
+          return resp;
+        };
+
+        // Trigger the full queue pipeline with all extension hooks
+        app.queuePrompt(0, 1).catch(err => {
+          clearTimeout(timeout);
+          window.fetch = origFetch;
+          reject(err);
+        });
+      });
+
+      return { job_id: promptId, status: "queued" };
     } catch (e) {
       return { error: `Failed to queue: ${e.message}` };
     }

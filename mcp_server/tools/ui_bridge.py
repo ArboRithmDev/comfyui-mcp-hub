@@ -377,51 +377,16 @@ def register(mcp: FastMCP) -> None:
     ) -> dict[str, Any]:
         """Execute the workflow currently displayed on the ComfyUI canvas.
 
-        Uses ComfyUI's native graphToPrompt() to convert the canvas to API format,
-        which correctly includes all widget values for every node (GetNode, SetNode,
-        String Literal, Int Literal, etc.).
+        Triggers the full ComfyUI queue pipeline via app.queuePrompt(), which
+        runs all frontend extension hooks (cg-use-everywhere connections,
+        rgthree GetNode/SetNode resolution, etc.) before submitting to /prompt.
 
         Returns a job_id that can be used with get_job_status and get_job_result.
-        If validation fails, returns the detailed error (node_id, node_type, message).
 
         Args:
             instance: Target ComfyUI instance name.
         """
-        # Step 1: Get the API-format prompt from the canvas via graphToPrompt()
-        prompt_data = await _ui_command("get_api_prompt", instance=instance)
-        if "error" in prompt_data:
-            return prompt_data
-
-        api_prompt = prompt_data.get("prompt", {})
-        if not api_prompt:
-            return {"error": "Canvas is empty or graphToPrompt() returned no output"}
-
-        # Step 2: Submit to /prompt
-        config = load_config()
-        client = ComfyUIClient(get_instance_url(config, instance))
-        try:
-            import uuid
-            client_id = str(uuid.uuid4())
-
-            result = await client.post("/prompt", data={
-                "prompt": api_prompt,
-                "client_id": client_id,
-                "extra_data": {"extra_pnginfo": {"workflow": prompt_data.get("workflow", {})}},
-            })
-
-            # Check for validation errors
-            if isinstance(result, dict):
-                if "error" in result:
-                    return _format_validation_error(result)
-                if "node_errors" in result and result["node_errors"]:
-                    return _format_validation_error(result)
-                prompt_id = result.get("prompt_id", "")
-                if prompt_id:
-                    return {"job_id": prompt_id, "status": "queued"}
-
-            return {"status": "queued", "details": result}
-        finally:
-            await client.close()
+        return await _ui_command("execute_current", instance=instance, timeout=20.0)
 
     @mcp.tool()
     async def get_execution_preview(
