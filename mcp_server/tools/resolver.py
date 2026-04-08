@@ -189,17 +189,20 @@ def register(mcp: FastMCP) -> None:
                     )
                     for r in civitai_results:
                         if "error" not in r:
+                            v = r.get("version", {})
                             candidates.append({
                                 "model_id": r.get("id"),
-                                "version_id": r.get("version", {}).get("id"),
+                                "version_id": v.get("id"),
                                 "name": r.get("name", ""),
-                                "filename": r.get("version", {}).get("filename", ""),
-                                "download_url": r.get("version", {}).get("download_url", ""),
-                                "size_mb": r.get("version", {}).get("size_mb", 0),
-                                "sha256": r.get("version", {}).get("sha256", ""),
+                                "base_model": v.get("base_model", ""),
+                                "filename": v.get("filename", ""),
+                                "download_url": v.get("download_url", ""),
+                                "size_mb": v.get("size_mb", 0),
+                                "sha256": v.get("sha256", ""),
                                 "civitai_url": r.get("civitai_url", ""),
                                 "match_type": "name_search",
                                 "source": "civitai",
+                                "all_versions": r.get("versions", []),
                             })
 
                 # HuggingFace fallback
@@ -260,21 +263,28 @@ def register(mcp: FastMCP) -> None:
     async def search_civitai(
         query: str,
         model_type: str | None = None,
+        base_model: str | None = None,
         limit: int = 5,
     ) -> list[dict[str, Any]]:
         """Search CivitAI for models (checkpoints, LoRAs, VAE, etc.).
 
         Results are filtered according to the NSFW preference set in MCP Hub config.
+        Early-access and paid models are automatically excluded.
+
+        Each result includes a `versions` array with all public versions, each specifying
+        its `base_model` (e.g. "SDXL 1.0", "Illustrious", "Flux.1 D", "Pony").
+        Use `version.id` with `download_civitai` to download a specific version.
 
         Args:
             query: Search text (model name, style, concept, etc.).
             model_type: Filter by type: Checkpoint, LORA, VAE, Controlnet, Upscaler, TextualInversion, Hypernetwork.
+            base_model: Filter versions by base model compatibility (e.g. "SDXL", "Illustrious", "Flux", "Pony", "SD 1.5").
             limit: Maximum number of results (default 5).
         """
         config = load_config()
         civitai = _make_civitai(config)
         try:
-            return await civitai.search_models(query=query, model_type=model_type, limit=limit)
+            return await civitai.search_models(query=query, model_type=model_type, base_model=base_model, limit=limit)
         finally:
             await civitai.close()
 
@@ -369,16 +379,19 @@ def register(mcp: FastMCP) -> None:
                 civitai_results = await civitai.search_models(query=search_name, model_type=civitai_type, limit=3)
                 for r in civitai_results:
                     if "error" not in r:
+                        v = r.get("version", {})
                         candidates.append({
-                            "version_id": r.get("version", {}).get("id"),
+                            "version_id": v.get("id"),
                             "name": r.get("name", ""),
-                            "filename": r.get("version", {}).get("filename", ""),
-                            "size_mb": r.get("version", {}).get("size_mb", 0),
+                            "base_model": v.get("base_model", ""),
+                            "filename": v.get("filename", ""),
+                            "size_mb": v.get("size_mb", 0),
                             "civitai_url": r.get("civitai_url", ""),
                             "rating": r.get("stats", {}).get("rating", 0),
                             "downloads": r.get("stats", {}).get("downloads", 0),
                             "match_type": "name_search",
                             "source": "civitai",
+                            "all_versions": r.get("versions", []),
                         })
 
                 # HuggingFace fallback

@@ -83,6 +83,7 @@ class CivitAIClient:
         self,
         query: str,
         model_type: str | None = None,
+        base_model: str | None = None,
         sort: str = "Highest Rated",
         limit: int = 5,
     ) -> list[dict[str, Any]]:
@@ -91,13 +92,14 @@ class CivitAIClient:
         Args:
             query: Search text.
             model_type: Filter by type (Checkpoint, LORA, VAE, etc.).
+            base_model: Filter versions by base model (e.g. "SDXL 1.0", "Illustrious", "Flux.1 D", "Pony").
             sort: Sort order (Highest Rated, Most Downloaded, Newest).
             limit: Max results to return.
         """
         session = await self._get_session()
         params: dict[str, Any] = {
             "query": query,
-            "limit": min(limit * 2, 20),  # Fetch extra to account for NSFW filtering
+            "limit": min(limit * 2, 20),  # Fetch extra to account for filtering
             "sort": sort,
         }
         if model_type:
@@ -111,10 +113,11 @@ class CivitAIClient:
             resp.raise_for_status()
             data = await resp.json()
 
+        base_model_lower = base_model.lower() if base_model else None
+
         results = []
         for item in data.get("items", []):
             nsfw_rating = item.get("nsfw", False)
-            # CivitAI returns nsfw as bool or string depending on endpoint
             if isinstance(nsfw_rating, bool):
                 nsfw_label = "X" if nsfw_rating else "None"
             else:
@@ -123,11 +126,35 @@ class CivitAIClient:
             if self._should_exclude(nsfw_label):
                 continue
 
-            # Get the latest version info
-            versions = item.get("modelVersions", [])
-            latest = versions[0] if versions else {}
-            files = latest.get("files", [])
-            primary_file = files[0] if files else {}
+            # Build version list — skip early-access/paid versions
+            all_versions = item.get("modelVersions", [])
+            version_list = []
+            for v in all_versions:
+                availability = v.get("availability", "Public")
+                if availability != "Public":
+                    continue  # Skip EarlyAccess / paid versions
+
+                vbase = v.get("baseModel", "")
+                # Filter by base model if specified
+                if base_model_lower and base_model_lower not in vbase.lower():
+                    continue
+
+                files = v.get("files", [])
+                primary_file = files[0] if files else {}
+
+                version_list.append({
+                    "id": v.get("id"),
+                    "name": v.get("name", ""),
+                    "base_model": vbase,
+                    "download_url": v.get("downloadUrl", ""),
+                    "filename": primary_file.get("name", ""),
+                    "size_mb": round(primary_file.get("sizeKB", 0) / 1024, 1),
+                    "sha256": (primary_file.get("hashes", {}) or {}).get("SHA256", ""),
+                })
+
+            # Skip models with no available (public) versions
+            if not version_list:
+                continue
 
             results.append({
                 "id": item.get("id"),
@@ -140,14 +167,8 @@ class CivitAIClient:
                     "rating": item.get("stats", {}).get("rating", 0),
                     "downloads": item.get("stats", {}).get("downloadCount", 0),
                 },
-                "version": {
-                    "id": latest.get("id"),
-                    "name": latest.get("name", ""),
-                    "download_url": latest.get("downloadUrl", ""),
-                    "filename": primary_file.get("name", ""),
-                    "size_mb": round(primary_file.get("sizeKB", 0) / 1024, 1),
-                    "sha256": (primary_file.get("hashes", {}) or {}).get("SHA256", ""),
-                },
+                "versions": version_list,
+                "version": version_list[0],  # Latest public version (backward compat)
                 "civitai_url": f"https://civitai.com/models/{item.get('id')}",
             })
 
