@@ -6,12 +6,12 @@
   <p align="center">
     <a href="#quick-start">Quick Start</a> &nbsp;&bull;&nbsp;
     <a href="#supported-ai-clients">Supported Clients</a> &nbsp;&bull;&nbsp;
-    <a href="#all-55-tools">All 55 Tools</a> &nbsp;&bull;&nbsp;
+    <a href="#all-61-tools">All 61 Tools</a> &nbsp;&bull;&nbsp;
     <a href="#architecture">Architecture</a> &nbsp;&bull;&nbsp;
     <a href="#configuration">Configuration</a>
   </p>
   <p align="center">
-    <img src="https://img.shields.io/badge/tools-55-blue" alt="55 MCP Tools">
+    <img src="https://img.shields.io/badge/tools-61-blue" alt="61 MCP Tools">
     <img src="https://img.shields.io/badge/python-3.10+-green" alt="Python 3.10+">
     <img src="https://img.shields.io/badge/protocol-MCP-orange" alt="Model Context Protocol">
     <img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT License">
@@ -20,7 +20,7 @@
 
 ---
 
-MCP Hub is a [Model Context Protocol](https://modelcontextprotocol.io/) server packaged as a ComfyUI custom node. It exposes **55 tools** that let any MCP-compatible AI assistant — Claude, Gemini, Codex, Cursor, and more — interact with your local ComfyUI instance: inspect workflows, generate images, manage models, install packages, and manipulate the canvas in real time.
+MCP Hub is a [Model Context Protocol](https://modelcontextprotocol.io/) server packaged as a ComfyUI custom node. It exposes **61 tools** that let any MCP-compatible AI assistant — Claude, Gemini, Codex, Cursor, and more — interact with your local ComfyUI instance: inspect workflows, generate images, manage models, install packages, and manipulate the canvas in real time.
 
 **One install. Zero cloud dependency. Fully local.**
 
@@ -28,7 +28,7 @@ MCP Hub is a [Model Context Protocol](https://modelcontextprotocol.io/) server p
 
 ## Highlights
 
-- **Canvas control** &mdash; AI agents can read the graph, add/remove/connect nodes, update parameters, capture screenshots, and execute workflows directly on the canvas.
+- **Canvas control** &mdash; AI agents can read the graph, add/remove/connect nodes, update parameters, capture screenshots, execute workflows, and arrange the layout (move, align, collapse, resize, fit view) directly on the canvas.
 - **CivitAI & HuggingFace integration** &mdash; Search models, download with progress tracking, NSFW filtering, hash-based exact matching.
 - **Smart resolver** &mdash; Submit any workflow: MCP Hub automatically detects missing nodes, missing models, and broken Python dependencies, then fixes them.
 - **Multi-instance** &mdash; Register ComfyUI instances across your LAN and route any command to any machine.
@@ -134,7 +134,7 @@ MCP Hub adds a sidebar panel to ComfyUI Desktop:
 
 ---
 
-## All 55 Tools
+## All 61 Tools
 
 <details>
 <summary><strong>Introspection</strong> &mdash; 5 tools</summary>
@@ -218,7 +218,7 @@ MCP Hub adds a sidebar panel to ComfyUI Desktop:
 </details>
 
 <details>
-<summary><strong>UI Bridge</strong> &mdash; 15 tools</summary>
+<summary><strong>UI Bridge</strong> &mdash; 21 tools</summary>
 
 | Tool | Description |
 |------|-------------|
@@ -232,8 +232,14 @@ MCP Hub adds a sidebar panel to ComfyUI Desktop:
 | `remove_node` | Delete a node |
 | `connect_nodes` | Wire source output &rarr; target input |
 | `update_node` | Change widgets, title, or color |
-| `arrange_nodes` | Auto-layout |
+| `move_node` | Position a node at exact coordinates |
+| `resize_node` | Set dimensions or auto-fit to content |
+| `collapse_node` | Toggle collapsed/expanded state |
+| `arrange_nodes` | Auto-layout all nodes |
+| `align_nodes` | Align nodes horizontally or vertically with configurable spacing |
 | `group_nodes` | Visual grouping |
+| `fit_view` | Reset canvas zoom to show all nodes |
+| `refresh_ui` | Refresh the interface (soft: redraw + reload dropdowns, hard: full page reload) |
 | `execute_current` | Queue canvas workflow &mdash; returns `job_id` and validation errors |
 | `get_execution_preview` | Node preview as base64 PNG |
 | `notify_ui` | Toast notification in ComfyUI |
@@ -285,7 +291,7 @@ MCP Hub adds a sidebar panel to ComfyUI Desktop:
                   │ subprocess (stdio)
 ┌─────────────────▼────────────────────┐
 │    MCP Server (separate process)     │
-│    55 tools  ·  4 resources          │
+│    61 tools · 4 resources            │
 │    Auto-detects Manager v1/v2 API    │
 └────────┬────────────────┬────────────┘
          │                │
