@@ -1,18 +1,29 @@
-"""OptionalMergeImages — Merge up to 5 image sources, all optional.
+"""OptionalMergeImages — Merge image sources, filtering out empty signals.
 
-Uses lazy evaluation: only requests inputs that are actually connected.
-If no image is provided, silently blocks downstream execution.
-If only some inputs are connected, merges only the available images.
+Works with OptionalLoadImage: images that are 1x1 (empty signal) are
+automatically ignored. If all inputs are empty/missing, blocks downstream.
 """
 
 import torch
 import comfy.utils
 
+from .optional_load_image import EMPTY_SIGNAL_SIZE
+
+
+def _is_empty_signal(img):
+    """Check if an image tensor is the 1x1 empty signal from OptionalLoadImage."""
+    if img is None:
+        return True
+    # After resize nodes, the image might still be very small (1x1 or similar)
+    return img.shape[1] <= EMPTY_SIGNAL_SIZE and img.shape[2] <= EMPTY_SIGNAL_SIZE
+
 
 class OptionalMergeImages:
-    """Merge multiple image sources. All inputs are optional — blocks downstream if none provided."""
+    """Merge multiple image sources, ignoring empty signals from OptionalLoadImage.
 
-    _OPTIONAL_INPUTS = ("image_1", "image_2", "image_3", "image_4", "image_5")
+    All inputs are optional. Empty signals (1x1 images) are filtered out.
+    If no real image remains, silently blocks downstream execution.
+    """
 
     @classmethod
     def INPUT_TYPES(s):
@@ -21,11 +32,11 @@ class OptionalMergeImages:
                 "method": (["nearest-exact", "bilinear", "area", "bicubic", "lanczos"], {"default": "lanczos"}),
             },
             "optional": {
-                "image_1": ("IMAGE", {"lazy": True}),
-                "image_2": ("IMAGE", {"lazy": True}),
-                "image_3": ("IMAGE", {"lazy": True}),
-                "image_4": ("IMAGE", {"lazy": True}),
-                "image_5": ("IMAGE", {"lazy": True}),
+                "image_1": ("IMAGE",),
+                "image_2": ("IMAGE",),
+                "image_3": ("IMAGE",),
+                "image_4": ("IMAGE",),
+                "image_5": ("IMAGE",),
             },
         }
 
@@ -33,24 +44,12 @@ class OptionalMergeImages:
     FUNCTION = "execute"
     CATEGORY = "image"
 
-    def check_lazy_status(self, method, **kwargs):
-        """Only request evaluation of inputs that are not yet resolved."""
-        needed = []
-        for name in self._OPTIONAL_INPUTS:
-            if name not in kwargs:
-                # Not connected — skip
-                continue
-            if kwargs[name] is None:
-                # Connected but not yet evaluated — request it
-                needed.append(name)
-        return needed
-
-    def execute(self, method, **kwargs):
-        images = []
-        for name in self._OPTIONAL_INPUTS:
-            img = kwargs.get(name)
-            if img is not None:
-                images.append(img)
+    def execute(self, method, image_1=None, image_2=None, image_3=None, image_4=None, image_5=None):
+        # Filter out None and empty signal images
+        images = [
+            img for img in (image_1, image_2, image_3, image_4, image_5)
+            if not _is_empty_signal(img)
+        ]
 
         if not images:
             from comfy_execution.graph_utils import ExecutionBlocker

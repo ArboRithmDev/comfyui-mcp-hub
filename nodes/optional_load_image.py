@@ -1,4 +1,4 @@
-"""OptionalLoadImage — Load an image or silently block downstream execution."""
+"""OptionalLoadImage — Load an image or emit a 1x1 empty signal for downstream filtering."""
 
 import os
 import hashlib
@@ -11,9 +11,25 @@ import folder_paths
 import node_helpers
 import comfy.model_management
 
+# Sentinel size used to signal "no image" to downstream nodes.
+# OptionalMergeImages filters these out automatically.
+EMPTY_SIGNAL_SIZE = 1
+
+
+def _make_empty_signal():
+    """Return a 1x1 black image and mask as the 'no image' signal."""
+    image = torch.zeros((1, EMPTY_SIGNAL_SIZE, EMPTY_SIGNAL_SIZE, 3), dtype=torch.float32)
+    mask = torch.zeros((1, EMPTY_SIGNAL_SIZE, EMPTY_SIGNAL_SIZE), dtype=torch.float32)
+    return (image, mask)
+
 
 class OptionalLoadImage:
-    """Like LoadImage, but with a 'none' option that blocks downstream nodes."""
+    """Like LoadImage, but with a 'none' option.
+
+    When 'none' is selected (or no valid image), outputs a 1x1 black image
+    as a signal. This passes safely through intermediate nodes (resize, etc.).
+    Use with 'Merge Images (Optional)' which filters these signals automatically.
+    """
 
     @classmethod
     def INPUT_TYPES(s):
@@ -32,15 +48,13 @@ class OptionalLoadImage:
 
     def load_image(self, image):
         if image == "none" or not image:
-            from comfy_execution.graph_utils import ExecutionBlocker
-            return (ExecutionBlocker(None), ExecutionBlocker(None))
+            return _make_empty_signal()
 
         image_path = folder_paths.get_annotated_filepath(image)
 
-        # Guard against directory paths or missing files
         if not os.path.isfile(image_path):
-            from comfy_execution.graph_utils import ExecutionBlocker
-            return (ExecutionBlocker(None), ExecutionBlocker(None))
+            return _make_empty_signal()
+
         img = node_helpers.pillow(Image.open, image_path)
 
         output_images = []
