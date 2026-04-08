@@ -387,7 +387,9 @@ async function postResponse(commandId, result) {
 
 api.addEventListener("mcp-hub:command", async ({ detail }) => {
   const { command_id, command, data } = detail;
-  const handler = handlers[command];
+  // Check layout handlers first, then core handlers
+  const layoutHandlers = window._mcpLayoutHandlers || {};
+  const handler = handlers[command] || layoutHandlers[command];
 
   if (!handler) {
     postResponse(command_id, { error: `Unknown command: ${command}` });

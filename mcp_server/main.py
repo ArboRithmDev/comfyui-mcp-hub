@@ -17,7 +17,7 @@ if __name__ == "__main__" or __package__ is None:
 from mcp.server.fastmcp import FastMCP
 
 from .config import load_config
-from .tools import introspection, workflows, generation, models, packages, instances, resolver, ui_bridge
+from .tools import introspection, workflows, generation, models, packages, instances, resolver, ui_bridge, smart_layout, workflow_ops
 from .resources import status
 
 
@@ -47,9 +47,11 @@ def create_server() -> FastMCP:
     if enabled.get("instances", True):
         instances.register(mcp)
 
-    # Resolver and UI bridge are always enabled (core functionality)
+    # Core tools — always enabled
     resolver.register(mcp)
     ui_bridge.register(mcp)
+    smart_layout.register(mcp)
+    workflow_ops.register(mcp)
 
     # Always register resources
     status.register(mcp)
