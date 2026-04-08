@@ -356,6 +356,8 @@ class MCPHubPanel {
     this.inlineContainer = null;
     this.activityEntries = [];
     this.activeDownloads = {};
+    this.versionInfo = null;
+    this.availableVersions = [];
   }
 
   async init() {
@@ -631,6 +633,24 @@ class MCPHubPanel {
       <div style="margin-top:12px;">
         <button class="primary" id="mcp-hub-save-settings">Save Settings</button>
       </div>
+
+      <div class="setting-group" style="margin-top:20px;border-top:1px solid #333;padding-top:16px;">
+        <div class="setting-label" style="font-size:13px;font-weight:600;">Version</div>
+        <div id="mcp-hub-version-info" style="font-size:12px;color:#aaa;margin-bottom:8px;">
+          ${this.versionInfo ? `Current: <strong>v${this.versionInfo.current}</strong>${this.versionInfo.update_available ? ` — <span style="color:#4ecdc4;">v${this.versionInfo.latest} available</span>` : " — up to date"}` : "Loading..."}
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <select id="mcp-hub-version-select" style="flex:1;">
+            ${this.availableVersions.length > 0
+              ? this.availableVersions.map(v => `<option value="${v.tag}" ${v.is_current ? "selected" : ""}>${v.version}${v.prerelease ? " (pre)" : ""}${v.is_current ? " (current)" : ""} — ${v.name || v.tag}</option>`).join("")
+              : `<option value="">Click "Check" to load versions</option>`}
+          </select>
+          <button class="sm" id="mcp-hub-version-check">Check</button>
+          <button class="primary sm" id="mcp-hub-version-apply" ${this.availableVersions.length === 0 ? "disabled" : ""}>Apply</button>
+        </div>
+        <div id="mcp-hub-version-notes" style="font-size:11px;color:#888;margin-top:6px;max-height:80px;overflow-y:auto;white-space:pre-wrap;"></div>
+        <div id="mcp-hub-version-status" style="font-size:11px;margin-top:4px;"></div>
+      </div>
     `;
   }
 
@@ -682,6 +702,17 @@ class MCPHubPanel {
 
     const saveSettingsBtn = this.panel.querySelector("#mcp-hub-save-settings");
     if (saveSettingsBtn) saveSettingsBtn.onclick = () => this.saveSettings();
+
+    // Version management
+    const versionCheckBtn = this.panel.querySelector("#mcp-hub-version-check");
+    if (versionCheckBtn) versionCheckBtn.onclick = () => this.checkVersions();
+    const versionApplyBtn = this.panel.querySelector("#mcp-hub-version-apply");
+    if (versionApplyBtn) versionApplyBtn.onclick = () => this.applyVersion();
+    const versionSelect = this.panel.querySelector("#mcp-hub-version-select");
+    if (versionSelect) versionSelect.onchange = () => this.showVersionNotes();
+
+    // Load version info at startup (non-blocking)
+    this.loadVersionInfo();
 
     // Load activity log
     this.loadActivity();
@@ -761,6 +792,93 @@ class MCPHubPanel {
       this.activeDownloads[dl.id] = dl;
     }
     this.renderActivityList();
+  }
+
+  // ── Version management ───────────────────────────────────────────────
+
+  async loadVersionInfo() {
+    try {
+      this.versionInfo = await this.fetchJSON(`${API_BASE}/version/check`);
+      const infoEl = this.panel?.querySelector("#mcp-hub-version-info");
+      if (infoEl && this.versionInfo.current) {
+        const current = `Current: <strong>v${this.versionInfo.current}</strong>`;
+        if (this.versionInfo.update_available) {
+          infoEl.innerHTML = `${current} — <span style="color:#4ecdc4;">v${this.versionInfo.latest} available</span>`;
+        } else {
+          infoEl.innerHTML = `${current} — up to date`;
+        }
+      }
+    } catch (e) {
+      console.error("MCP Hub: version check error", e);
+    }
+  }
+
+  async checkVersions() {
+    const btn = this.panel?.querySelector("#mcp-hub-version-check");
+    if (btn) { btn.textContent = "..."; btn.disabled = true; }
+
+    const data = await this.fetchJSON(`${API_BASE}/version/list`);
+    this.availableVersions = data.versions || [];
+    this.versionInfo = { current: data.current, current_tag: data.current_tag };
+
+    const select = this.panel?.querySelector("#mcp-hub-version-select");
+    if (select) {
+      select.innerHTML = this.availableVersions.length > 0
+        ? this.availableVersions.map(v =>
+            `<option value="${v.tag}" ${v.is_current ? "selected" : ""}>${v.version}${v.prerelease ? " (pre)" : ""}${v.is_current ? " (current)" : ""} — ${v.name || v.tag}</option>`
+          ).join("")
+        : `<option value="">No releases found</option>`;
+    }
+
+    const applyBtn = this.panel?.querySelector("#mcp-hub-version-apply");
+    if (applyBtn) applyBtn.disabled = this.availableVersions.length === 0;
+
+    if (btn) { btn.textContent = "Check"; btn.disabled = false; }
+    this.showVersionNotes();
+  }
+
+  showVersionNotes() {
+    const select = this.panel?.querySelector("#mcp-hub-version-select");
+    const notesEl = this.panel?.querySelector("#mcp-hub-version-notes");
+    if (!select || !notesEl) return;
+
+    const tag = select.value;
+    const ver = this.availableVersions.find(v => v.tag === tag);
+    notesEl.textContent = ver?.notes || "";
+  }
+
+  async applyVersion() {
+    const select = this.panel?.querySelector("#mcp-hub-version-select");
+    const statusEl = this.panel?.querySelector("#mcp-hub-version-status");
+    const btn = this.panel?.querySelector("#mcp-hub-version-apply");
+    if (!select?.value) return;
+
+    const tag = select.value;
+    const ver = this.availableVersions.find(v => v.tag === tag);
+    if (ver?.is_current) {
+      if (statusEl) { statusEl.innerHTML = `<span style="color:#888;">Already on this version.</span>`; }
+      return;
+    }
+
+    if (btn) { btn.textContent = "Switching..."; btn.disabled = true; }
+    if (statusEl) { statusEl.innerHTML = `<span style="color:#4ecdc4;">Switching to ${tag}...</span>`; }
+
+    const result = await this.fetchJSON(`${API_BASE}/version/switch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tag }),
+    });
+
+    if (result.error) {
+      if (statusEl) { statusEl.innerHTML = `<span style="color:#ff6b6b;">${result.error}</span>`; }
+    } else {
+      if (statusEl) { statusEl.innerHTML = `<span style="color:#4ecdc4;">${result.message}</span>`; }
+      // Update the current markers
+      this.availableVersions.forEach(v => { v.is_current = v.tag === tag; });
+      this.checkVersions();
+    }
+
+    if (btn) { btn.textContent = "Apply"; btn.disabled = false; }
   }
 
   // ── Actions ──────────────────────────────────────────────────────────

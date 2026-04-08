@@ -10,6 +10,7 @@ from aiohttp import web
 from .cli_detector import configure_all, configure_cli, detect_clis, unconfigure_cli
 from .instance_registry import registry
 from .process_manager import manager
+from . import updater
 
 try:
     from server import PromptServer
@@ -146,3 +147,36 @@ async def unconfigure_cli_route(request: web.Request) -> web.Response:
 async def configure_all_route(_request: web.Request) -> web.Response:
     results = configure_all()
     return web.json_response(results)
+
+
+# ── Version management ───────────────────────────────────────────────
+
+
+@routes.get("/mcp-hub/version")
+async def get_version(_request: web.Request) -> web.Response:
+    return web.json_response({
+        "version": updater.get_current_version(),
+        "tag": updater.get_current_tag(),
+    })
+
+
+@routes.get("/mcp-hub/version/check")
+async def check_update(_request: web.Request) -> web.Response:
+    result = await asyncio.get_event_loop().run_in_executor(None, updater.check_for_update)
+    return web.json_response(result)
+
+
+@routes.get("/mcp-hub/version/list")
+async def list_versions(_request: web.Request) -> web.Response:
+    result = await asyncio.get_event_loop().run_in_executor(None, updater.list_versions)
+    return web.json_response(result)
+
+
+@routes.post("/mcp-hub/version/switch")
+async def switch_version(request: web.Request) -> web.Response:
+    body = await request.json()
+    tag = body.get("tag", "")
+    if not tag:
+        return web.json_response({"error": "tag is required"}, status=400)
+    result = await asyncio.get_event_loop().run_in_executor(None, updater.switch_version, tag)
+    return web.json_response(result)

@@ -91,6 +91,21 @@ if _running_in_comfyui():
 
     manager.try_autostart()
 
+    # ── Check for updates (non-blocking) ──────────────────────────────────
+
+    import threading
+    from .server.updater import check_for_update
+
+    def _check_update_bg():
+        try:
+            info = check_for_update()
+            if info.get("update_available"):
+                print(f"[MCP Hub] Update available: v{info['latest']} (current: v{info['current']})")
+        except Exception:
+            pass
+
+    threading.Thread(target=_check_update_bg, daemon=True).start()
+
 # ── ComfyUI registration ─────────────────────────────────────────────
 
 NODE_CLASS_MAPPINGS = {}
