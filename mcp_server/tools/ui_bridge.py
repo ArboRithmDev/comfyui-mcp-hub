@@ -400,6 +400,23 @@ def register(mcp: FastMCP) -> None:
         finally:
             await client.close()
 
+    @mcp.tool()
+    async def refresh_ui(
+        mode: str = "soft",
+        instance: str | None = None,
+    ) -> dict[str, Any]:
+        """Refresh the ComfyUI interface.
+
+        Use after installing packages, downloading models, or changing settings
+        so the UI picks up the changes without a manual browser reload.
+
+        Args:
+            mode: "soft" redraws the canvas and refreshes model/node dropdowns.
+                  "hard" triggers a full browser page reload.
+            instance: Target ComfyUI instance name.
+        """
+        return await _ui_command("refresh_ui", {"mode": mode}, instance=instance)
+
     # ── Debugging ─────────────────────────────────────────────────────
 
     @mcp.tool()

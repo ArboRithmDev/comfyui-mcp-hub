@@ -228,6 +228,27 @@ const handlers = {
 
     return { node_id: nodeId, has_preview: false };
   },
+
+  refresh_ui(data) {
+    const mode = data.mode || "soft";
+    try {
+      if (mode === "hard") {
+        // Full browser reload
+        window.location.reload();
+        return { status: "reloading" };
+      }
+      // Soft refresh: redraw canvas + refresh combo widgets (model lists, etc.)
+      if (app.graph) {
+        app.graph.setDirtyCanvas(true, true);
+      }
+      if (typeof app.refreshComboInNodes === "function") {
+        app.refreshComboInNodes();
+      }
+      return { status: "refreshed", mode };
+    } catch (e) {
+      return { error: `Refresh failed: ${e.message}` };
+    }
+  },
 };
 
 // ── Post response back to backend ─────────────────────────────────────
