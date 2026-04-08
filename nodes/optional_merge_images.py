@@ -11,11 +11,16 @@ from .optional_load_image import EMPTY_SIGNAL_SIZE
 
 
 def _is_empty_signal(img):
-    """Check if an image tensor is the 1x1 empty signal from OptionalLoadImage."""
+    """Check if an image is empty: None, tiny (signal), or fully black."""
     if img is None:
         return True
-    # After resize nodes, the image might still be very small (1x1 or similar)
-    return img.shape[1] <= EMPTY_SIGNAL_SIZE and img.shape[2] <= EMPTY_SIGNAL_SIZE
+    # Small signal from OptionalLoadImage (8x8 or smaller after resize)
+    if img.shape[1] <= EMPTY_SIGNAL_SIZE and img.shape[2] <= EMPTY_SIGNAL_SIZE:
+        return True
+    # Fully black image (all pixels zero)
+    if img.max().item() == 0.0:
+        return True
+    return False
 
 
 class OptionalMergeImages:
