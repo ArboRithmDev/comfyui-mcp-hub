@@ -10,6 +10,7 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 
 from .. import activity as act
+from ..archive import extract_and_dispatch, is_archive
 from ..civitai_client import CivitAIClient, MODEL_TYPE_MAP
 from ..comfyui_client import ComfyUIClient
 from ..config import get_instance_url, load_config
@@ -323,6 +324,22 @@ def register(mcp: FastMCP) -> None:
             else:
                 await tracker.finish(success=True)
                 await act.log("download_civitai", f"Downloaded {result.get('filename', dl_name)} ({result.get('size_mb', 0)} MB)", act.SUCCESS)
+
+                # Auto-extract archives and dispatch files to correct directories
+                downloaded_path = result.get("path", "")
+                if downloaded_path and is_archive(downloaded_path):
+                    models_root = _comfyui_root() / "models"
+                    # Map CivitAI type to ComfyUI subdir for fallback
+                    default_subdir = MODEL_TYPE_MAP.get(model_type, "checkpoints")
+                    await act.log("download_civitai", f"Extracting archive: {result.get('filename', '')}", act.INFO)
+                    extract_result = extract_and_dispatch(downloaded_path, models_root, default_subdir)
+                    result["archive_extraction"] = extract_result
+                    if extract_result.get("status") == "ok":
+                        extracted = extract_result.get("extracted", [])
+                        await act.log("download_civitai", f"Extracted {len(extracted)} file(s) to model directories", act.SUCCESS)
+                    else:
+                        await act.log("download_civitai", f"Extraction failed: {extract_result.get('error', 'unknown')}", act.ERROR)
+
             return result
         finally:
             await civitai.close()
