@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import os
 from pathlib import Path
 from typing import Any
@@ -205,17 +206,19 @@ class CivitAIClient:
         target_dir: str | Path,
         filename: str = "",
         on_progress: Any = None,
+        retries: int = 3,
     ) -> dict[str, Any]:
-        """Download a model file from CivitAI.
+        """Download a model file from CivitAI with integrity verification.
 
         Args:
             version_id: The model version ID to download.
             target_dir: Directory to save the file to.
             filename: Override filename. If empty, uses the original filename.
             on_progress: Optional callback(downloaded_bytes, total_bytes) for progress tracking.
+            retries: Number of retry attempts on failure (default 3).
 
         Returns:
-            Dict with status, path, size info.
+            Dict with status, path, size info, and integrity check results.
         """
         version = await self.get_version(version_id)
         files = version.get("files", [])
@@ -227,44 +230,130 @@ class CivitAIClient:
         if not download_url:
             return {"error": "No download URL available"}
 
+        expected_sha256 = (primary.get("hashes", {}) or {}).get("SHA256", "")
+        expected_size_kb = primary.get("sizeKB", 0)
+
         fname = filename or primary.get("name", f"model_{version_id}.safetensors")
         target = Path(target_dir) / fname
         target.parent.mkdir(parents=True, exist_ok=True)
 
+        last_error = ""
+        for attempt in range(1, retries + 1):
+            try:
+                result = await self._download_with_verification(
+                    download_url, target, fname, version_id,
+                    expected_sha256, expected_size_kb, on_progress,
+                )
+                if "error" not in result:
+                    return result
+                # Auth errors should not be retried
+                if "Authentication" in result["error"]:
+                    return result
+                # Integrity failure — retry
+                last_error = result["error"]
+                if attempt < retries:
+                    await asyncio.sleep(2 * attempt)  # Backoff
+                    continue
+                return result
+            except aiohttp.ClientError as exc:
+                last_error = str(exc)
+                if target.exists():
+                    target.unlink()
+                if attempt < retries:
+                    await asyncio.sleep(2 * attempt)
+                    continue
+            except Exception as exc:
+                if target.exists():
+                    target.unlink()
+                return {"error": str(exc)}
+
+        return {"error": f"Download failed after {retries} attempts: {last_error}"}
+
+    async def _download_with_verification(
+        self,
+        url: str,
+        target: Path,
+        fname: str,
+        version_id: int,
+        expected_sha256: str,
+        expected_size_kb: float,
+        on_progress: Any,
+    ) -> dict[str, Any]:
+        """Download a file and verify its integrity."""
         session = await self._get_session()
-        try:
-            async with session.get(download_url) as resp:
-                if resp.status == 401:
-                    return {"error": "Authentication required. Please set your CivitAI API token."}
-                resp.raise_for_status()
+        async with session.get(url) as resp:
+            if resp.status == 401:
+                return {"error": "Authentication required. Please set your CivitAI API token."}
+            resp.raise_for_status()
 
-                total = int(resp.headers.get("Content-Length", 0))
-                downloaded = 0
-                last_report = 0
+            content_length = int(resp.headers.get("Content-Length", 0))
+            downloaded = 0
+            last_report = 0
+            sha256 = hashlib.sha256() if expected_sha256 else None
 
-                with open(target, "wb") as f:
-                    async for chunk in resp.content.iter_chunked(1024 * 1024):
-                        f.write(chunk)
-                        downloaded += len(chunk)
-                        # Report progress every ~5MB
-                        if on_progress and (downloaded - last_report) >= 5 * 1024 * 1024:
-                            on_progress(downloaded, total)
-                            last_report = downloaded
+            with open(target, "wb") as f:
+                async for chunk in resp.content.iter_chunked(1024 * 1024):
+                    f.write(chunk)
+                    downloaded += len(chunk)
+                    if sha256:
+                        sha256.update(chunk)
+                    if on_progress and (downloaded - last_report) >= 5 * 1024 * 1024:
+                        on_progress(downloaded, total=content_length)
+                        last_report = downloaded
 
-                if on_progress:
-                    on_progress(downloaded, total)
+            if on_progress:
+                on_progress(downloaded, total=content_length)
 
+            # ── Integrity checks ──────────────────────────────────
+            integrity = {"size_match": True, "hash_match": True}
+
+            # Size check: compare to Content-Length header
+            if content_length > 0 and downloaded != content_length:
+                integrity["size_match"] = False
+                if target.exists():
+                    target.unlink()
                 return {
-                    "status": "downloaded",
-                    "path": str(target),
-                    "filename": fname,
-                    "size_mb": round(downloaded / (1024 * 1024), 1),
-                    "version_id": version_id,
+                    "error": f"Download truncated: got {downloaded} bytes, expected {content_length}",
+                    "downloaded_bytes": downloaded,
+                    "expected_bytes": content_length,
                 }
-        except Exception as exc:
-            if target.exists():
-                target.unlink()
-            return {"error": str(exc)}
+
+            # Size check: compare to CivitAI metadata (tolerance: 1%)
+            if expected_size_kb > 0:
+                expected_bytes = int(expected_size_kb * 1024)
+                tolerance = max(expected_bytes * 0.01, 1024)  # 1% or 1KB
+                if abs(downloaded - expected_bytes) > tolerance:
+                    integrity["size_match"] = False
+                    if target.exists():
+                        target.unlink()
+                    return {
+                        "error": f"Size mismatch: got {downloaded} bytes, CivitAI reports {expected_bytes}",
+                        "downloaded_bytes": downloaded,
+                        "expected_bytes": expected_bytes,
+                    }
+
+            # SHA256 check
+            if expected_sha256 and sha256:
+                actual_hash = sha256.hexdigest().upper()
+                expected_upper = expected_sha256.upper()
+                if actual_hash != expected_upper:
+                    integrity["hash_match"] = False
+                    if target.exists():
+                        target.unlink()
+                    return {
+                        "error": f"SHA256 mismatch: expected {expected_upper[:16]}..., got {actual_hash[:16]}...",
+                        "expected_sha256": expected_upper,
+                        "actual_sha256": actual_hash,
+                    }
+
+            return {
+                "status": "downloaded",
+                "path": str(target),
+                "filename": fname,
+                "size_mb": round(downloaded / (1024 * 1024), 1),
+                "version_id": version_id,
+                "integrity": integrity,
+            }
 
     def resolve_target_dir(self, model_type: str) -> Path:
         """Resolve the target directory for a model type."""

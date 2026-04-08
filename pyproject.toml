@@ -11,7 +11,7 @@ authors = [
 keywords = ["comfyui", "mcp", "ai-agents", "stable-diffusion", "workflow"]
 classifiers = [
     "Development Status :: 4 - Beta",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
     "Programming Language :: Python :: 3",
     "Topic :: Multimedia :: Graphics",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
@@ -32,3 +32,7 @@ PublisherId = "arborithmdev"
 DisplayName = "MCP Hub"
 Description = "Give AI agents full control over ComfyUI — 74 MCP tools for canvas control, CivitAI, workflow management, and more"
 Icon = ""
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

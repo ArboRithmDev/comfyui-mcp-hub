@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 from typing import Any
 
@@ -108,13 +109,15 @@ class HuggingFaceClient:
         url: str,
         target_dir: str | Path,
         filename: str = "",
+        retries: int = 3,
     ) -> dict[str, Any]:
-        """Download a file from HuggingFace.
+        """Download a file from HuggingFace with integrity verification.
 
         Args:
             url: Direct download URL.
             target_dir: Directory to save to.
             filename: Override filename.
+            retries: Number of retry attempts on failure (default 3).
         """
         if not filename:
             filename = url.split("/")[-1].split("?")[0]
@@ -122,24 +125,47 @@ class HuggingFaceClient:
         target = Path(target_dir) / filename
         target.parent.mkdir(parents=True, exist_ok=True)
 
-        session = await self._get_session()
-        try:
-            async with session.get(url) as resp:
-                resp.raise_for_status()
-                downloaded = 0
-                with open(target, "wb") as f:
-                    async for chunk in resp.content.iter_chunked(1024 * 1024):
-                        f.write(chunk)
-                        downloaded += len(chunk)
+        last_error = ""
+        for attempt in range(1, retries + 1):
+            try:
+                session = await self._get_session()
+                async with session.get(url) as resp:
+                    resp.raise_for_status()
+                    content_length = int(resp.headers.get("Content-Length", 0))
+                    downloaded = 0
+                    with open(target, "wb") as f:
+                        async for chunk in resp.content.iter_chunked(1024 * 1024):
+                            f.write(chunk)
+                            downloaded += len(chunk)
 
-                return {
-                    "status": "downloaded",
-                    "path": str(target),
-                    "filename": filename,
-                    "size_mb": round(downloaded / (1024 * 1024), 1),
-                    "source": "huggingface",
-                }
-        except Exception as exc:
-            if target.exists():
-                target.unlink()
-            return {"error": str(exc)}
+                    # Size verification
+                    if content_length > 0 and downloaded != content_length:
+                        if target.exists():
+                            target.unlink()
+                        last_error = f"Download truncated: got {downloaded} bytes, expected {content_length}"
+                        if attempt < retries:
+                            await asyncio.sleep(2 * attempt)
+                            continue
+                        return {"error": last_error}
+
+                    return {
+                        "status": "downloaded",
+                        "path": str(target),
+                        "filename": filename,
+                        "size_mb": round(downloaded / (1024 * 1024), 1),
+                        "source": "huggingface",
+                        "integrity": {"size_match": True},
+                    }
+            except aiohttp.ClientError as exc:
+                last_error = str(exc)
+                if target.exists():
+                    target.unlink()
+                if attempt < retries:
+                    await asyncio.sleep(2 * attempt)
+                    continue
+            except Exception as exc:
+                if target.exists():
+                    target.unlink()
+                return {"error": str(exc)}
+
+        return {"error": f"Download failed after {retries} attempts: {last_error}"}
