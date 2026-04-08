@@ -288,9 +288,17 @@ class CivitAIClient:
     ) -> dict[str, Any]:
         """Download a file and verify its integrity."""
         session = await self._get_session()
-        async with session.get(url) as resp:
+        # CivitAI redirects downloads to a CDN (edge.civitai.com).
+        # Authorization headers are stripped on redirect for security,
+        # so we must pass the token as a query parameter instead.
+        download_url = url
+        if self.token:
+            sep = "&" if "?" in url else "?"
+            download_url = f"{url}{sep}token={self.token}"
+        async with session.get(download_url) as resp:
             if resp.status == 401:
-                return {"error": "Authentication required. Please set your CivitAI API token."}
+                hint = "Token is set but may be invalid or expired." if self.token else "No token configured."
+                return {"error": f"Authentication required (HTTP 401). {hint} Set your CivitAI API token in MCP Hub Settings."}
             resp.raise_for_status()
 
             content_length = int(resp.headers.get("Content-Length", 0))

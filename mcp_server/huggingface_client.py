@@ -134,7 +134,20 @@ class HuggingFaceClient:
         for attempt in range(1, retries + 1):
             try:
                 session = await self._get_session()
-                async with session.get(url) as resp:
+                # HuggingFace redirects /resolve/ URLs to a CDN.
+                # aiohttp strips Authorization headers on cross-origin redirects.
+                # We follow redirects manually to preserve auth on the initial request.
+                download_url = url
+                auth_headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
+                async with session.get(download_url, allow_redirects=False, headers=auth_headers) as head_resp:
+                    if head_resp.status in (301, 302, 303, 307, 308):
+                        # CDN redirect — follow without auth (CDN uses signed URLs)
+                        download_url = head_resp.headers.get("Location", url)
+                    elif head_resp.status == 401:
+                        return {"error": "Authentication required. Please set your HuggingFace token."}
+                    elif head_resp.status >= 400:
+                        head_resp.raise_for_status()
+                async with session.get(download_url) as resp:
                     resp.raise_for_status()
                     content_length = int(resp.headers.get("Content-Length", 0))
                     downloaded = 0
