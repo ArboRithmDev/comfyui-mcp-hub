@@ -11,8 +11,8 @@
     <a href="#configuration">Configuration</a>
   </p>
   <p align="center">
-    <img src="https://img.shields.io/badge/version-0.2.0-blueviolet" alt="Version 0.2.0">
-    <img src="https://img.shields.io/badge/tools-61-blue" alt="61 MCP Tools">
+    <img src="https://img.shields.io/badge/version-0.3.0-blueviolet" alt="Version 0.3.0">
+    <img src="https://img.shields.io/badge/tools-74-blue" alt="74 MCP Tools">
     <img src="https://img.shields.io/badge/python-3.10+-green" alt="Python 3.10+">
     <img src="https://img.shields.io/badge/protocol-MCP-orange" alt="Model Context Protocol">
     <img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT License">
@@ -21,7 +21,7 @@
 
 ---
 
-MCP Hub is a [Model Context Protocol](https://modelcontextprotocol.io/) server packaged as a ComfyUI custom node. It exposes **61 tools** that let any MCP-compatible AI assistant — Claude, Gemini, Codex, Cursor, and more — interact with your local ComfyUI instance: inspect workflows, generate images, manage models, install packages, and manipulate the canvas in real time.
+MCP Hub is a [Model Context Protocol](https://modelcontextprotocol.io/) server packaged as a ComfyUI custom node. It exposes **74 tools** that let any MCP-compatible AI assistant — Claude, Gemini, Codex, Cursor, and more — interact with your local ComfyUI instance: inspect workflows, generate images, manage models, install packages, and manipulate the canvas in real time.
 
 **One install. Zero cloud dependency. Fully local.**
 
@@ -42,10 +42,22 @@ MCP Hub is a [Model Context Protocol](https://modelcontextprotocol.io/) server p
 
 ### 1. Install
 
+**Option A &mdash; ComfyUI-Manager (recommended)**
+
+Search for **"MCP Hub"** in ComfyUI-Manager's custom node browser, then click Install.
+
+**Option B &mdash; Git clone**
+
 ```bash
 cd /path/to/ComfyUI/custom_nodes
 git clone https://github.com/ArboRithmDev/comfyui-mcp-hub.git
 ```
+
+**Option C &mdash; Download ZIP**
+
+Download the [latest release](https://github.com/ArboRithmDev/comfyui-mcp-hub/releases), extract into `ComfyUI/custom_nodes/comfyui-mcp-hub/`.
+
+---
 
 Restart ComfyUI. On first load, MCP Hub will automatically:
 - Install its Python dependencies (`mcp`, `aiohttp`, `websockets`)
@@ -219,6 +231,43 @@ MCP Hub adds a sidebar panel to ComfyUI Desktop:
 </details>
 
 <details>
+<summary><strong>Smart Layout</strong> &mdash; 4 tools</summary>
+
+| Tool | Description |
+|------|-------------|
+| `smart_layout` | Rules-based L&rarr;R flow layout with auto-coloring and named groups |
+| `colorize_nodes` | Color by category, connected branch, or custom per-node mapping |
+| `auto_group` | Detect logical sections and create named groups (by category or branch) |
+| `add_frame` | Add visual annotation frame with title, position, size, color |
+
+</details>
+
+<details>
+<summary><strong>Workflow Ops</strong> &mdash; 5 tools</summary>
+
+| Tool | Description |
+|------|-------------|
+| `optimize_workflow` | Detect/merge duplicate model loaders |
+| `templatize_workflow` | Extract prompts and seeds into `{{variables}}`, save template + inputs separately |
+| `apply_template` | Load template and inject input values with optional overrides |
+| `list_templates` | Browse saved templates with their variable names |
+| `workflow_git` | Full git versioning: init, commit, log, diff, restore, remote, push, pull |
+
+</details>
+
+<details>
+<summary><strong>Combo / Batch</strong> &mdash; 4 tools</summary>
+
+| Tool | Description |
+|------|-------------|
+| `get_overview` | Full instance state in one call (system, models, nodes, canvas) |
+| `build_workflow` | Create nodes + connections + layout in a single call |
+| `batch_update_nodes` | Update multiple nodes (widgets, position, color, collapse) at once |
+| `setup_and_execute` | Template &rarr; resolve &rarr; load &rarr; execute in one call |
+
+</details>
+
+<details>
 <summary><strong>UI Bridge</strong> &mdash; 21 tools</summary>
 
 | Tool | Description |
@@ -292,7 +341,7 @@ MCP Hub adds a sidebar panel to ComfyUI Desktop:
                   │ subprocess (stdio)
 ┌─────────────────▼────────────────────┐
 │    MCP Server (separate process)     │
-│    61 tools · 4 resources            │
+│    74 tools · 4 resources            │
 │    Auto-detects Manager v1/v2 API    │
 └────────┬────────────────┬────────────┘
          │                │
@@ -378,6 +427,16 @@ Python dependencies (`mcp`, `aiohttp`, `websockets`) are **installed automatical
 ---
 
 ## Changelog
+
+### v0.3.0
+
+- **Smart layout engine** &mdash; rules-based L&rarr;R flow positioning, context-aware branch coloring, auto-group detection, annotation frames
+- **Workflow optimizer** &mdash; detect and merge duplicate model loaders with automatic connection rewiring
+- **Template system** &mdash; extract prompts/seeds into `{{variables}}`, separate creative content from shareable workflow structure
+- **Git versioning** &mdash; init, commit, diff, log, restore, remote push/pull for the workflows directory
+- **Combo tools** &mdash; `get_overview`, `build_workflow`, `batch_update_nodes`, `setup_and_execute` to reduce round-trips for interaction-limited clients (Gemini, etc.)
+- **Pagination** &mdash; `list_nodes` now paginated (limit/offset) to avoid context flooding
+- **74 MCP tools total**
 
 ### v0.2.0
 
