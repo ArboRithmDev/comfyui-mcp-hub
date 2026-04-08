@@ -35,13 +35,20 @@ def register(mcp: FastMCP) -> None:
     async def list_nodes(
         category: str | None = None,
         search: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
         instance: str | None = None,
-    ) -> list[dict[str, Any]]:
-        """List all available ComfyUI nodes. Optionally filter by category or search term.
+    ) -> dict[str, Any]:
+        """List available ComfyUI nodes with pagination. Filter by category or search term.
+
+        Returns at most `limit` nodes starting from `offset`. Use for browsing
+        large node lists without consuming excessive tokens.
 
         Args:
             category: Filter nodes by category (e.g. "sampling", "loaders").
             search: Search term to filter node names.
+            limit: Maximum number of nodes to return (default 50, max 200).
+            offset: Number of nodes to skip (for pagination).
             instance: Target ComfyUI instance name. Uses default if omitted.
         """
         config = load_config()
@@ -63,7 +70,17 @@ def register(mcp: FastMCP) -> None:
                     "input_types": list(data.get("input", {}).get("required", {}).keys()),
                     "output_types": data.get("output", []),
                 })
-            return nodes
+
+            total = len(nodes)
+            limit = min(limit, 200)
+            page = nodes[offset:offset + limit]
+            return {
+                "nodes": page,
+                "total": total,
+                "offset": offset,
+                "limit": limit,
+                "has_more": (offset + limit) < total,
+            }
         finally:
             await client.close()
 

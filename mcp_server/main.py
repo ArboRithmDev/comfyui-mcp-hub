@@ -17,7 +17,7 @@ if __name__ == "__main__" or __package__ is None:
 from mcp.server.fastmcp import FastMCP
 
 from .config import load_config
-from .tools import introspection, workflows, generation, models, packages, instances, resolver, ui_bridge, smart_layout, workflow_ops
+from .tools import introspection, workflows, generation, models, packages, instances, resolver, ui_bridge, smart_layout, workflow_ops, combo
 from .resources import status
 
 
@@ -52,6 +52,7 @@ def create_server() -> FastMCP:
     ui_bridge.register(mcp)
     smart_layout.register(mcp)
     workflow_ops.register(mcp)
+    combo.register(mcp)
 
     # Always register resources
     status.register(mcp)
