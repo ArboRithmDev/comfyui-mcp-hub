@@ -57,10 +57,11 @@ def register(mcp: FastMCP) -> None:
             info = await client.get_object_info()
             nodes = []
             for name, data in info.items():
-                node_cat = data.get("category", "")
+                node_cat = data.get("category") or ""
                 if category and category.lower() not in node_cat.lower():
                     continue
-                if search and search.lower() not in name.lower() and search.lower() not in data.get("display_name", "").lower():
+                display = data.get("display_name") or ""
+                if search and search.lower() not in name.lower() and search.lower() not in display.lower():
                     continue
                 nodes.append({
                     "name": name,
