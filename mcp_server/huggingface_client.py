@@ -23,7 +23,12 @@ class HuggingFaceClient:
             headers: dict[str, str] = {}
             if self.token:
                 headers["Authorization"] = f"Bearer {self.token}"
-            self._session = aiohttp.ClientSession(headers=headers)
+            timeout = aiohttp.ClientTimeout(
+                total=None,
+                connect=30,
+                sock_read=120,
+            )
+            self._session = aiohttp.ClientSession(headers=headers, timeout=timeout)
         return self._session
 
     async def close(self) -> None:

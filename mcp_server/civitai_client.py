@@ -58,7 +58,14 @@ class CivitAIClient:
             headers: dict[str, str] = {"Content-Type": "application/json"}
             if self.token:
                 headers["Authorization"] = f"Bearer {self.token}"
-            self._session = aiohttp.ClientSession(headers=headers)
+            # Large model downloads can take 30+ minutes on slow connections.
+            # Default aiohttp total timeout (300s) truncates these transfers.
+            timeout = aiohttp.ClientTimeout(
+                total=None,       # No total timeout — let downloads finish
+                connect=30,       # 30s to establish connection
+                sock_read=120,    # 120s between chunks (detects stalled transfers)
+            )
+            self._session = aiohttp.ClientSession(headers=headers, timeout=timeout)
         return self._session
 
     async def close(self) -> None:
