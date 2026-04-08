@@ -24,6 +24,17 @@ const handlers = {
     return { workflow: data };
   },
 
+  async get_api_prompt() {
+    // graphToPrompt() converts the canvas graph to ComfyUI API format,
+    // including all widget values for every node — this is what /prompt expects.
+    try {
+      const p = await app.graphToPrompt();
+      return { prompt: p.output, workflow: p.workflow };
+    } catch (e) {
+      return { error: `graphToPrompt failed: ${e.message}` };
+    }
+  },
+
   get_selected_nodes() {
     const selected = app.canvas.selected_nodes || {};
     const nodes = Object.values(selected).map(n => ({
@@ -341,7 +352,7 @@ async function postResponse(commandId, result) {
 
 // ── Listen for commands from backend ──────────────────────────────────
 
-api.addEventListener("mcp-hub:command", ({ detail }) => {
+api.addEventListener("mcp-hub:command", async ({ detail }) => {
   const { command_id, command, data } = detail;
   const handler = handlers[command];
 
@@ -351,7 +362,7 @@ api.addEventListener("mcp-hub:command", ({ detail }) => {
   }
 
   try {
-    const result = handler(data || {});
+    const result = await handler(data || {});
     postResponse(command_id, result);
   } catch (e) {
     postResponse(command_id, { error: `Command failed: ${e.message}` });

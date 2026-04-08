@@ -64,19 +64,6 @@ def _simplify_node_errors(node_errors: dict[str, Any]) -> list[dict[str, Any]]:
     return simplified
 
 
-def _extract_api_workflow(ui_workflow: dict[str, Any]) -> dict[str, Any] | None:
-    """Try to extract API-format workflow from UI-format graph data.
-
-    UI format has {"nodes": [...], "links": [...], ...}
-    API format has {"1": {"class_type": ..., "inputs": ...}, ...}
-    """
-    # If it already looks like API format (keys are node IDs), return as-is
-    if "nodes" not in ui_workflow:
-        # Check if it looks like API format
-        for key in list(ui_workflow.keys())[:5]:
-            if isinstance(ui_workflow[key], dict) and "class_type" in ui_workflow[key]:
-                return ui_workflow
-    return None  # Can't convert — let the caller handle it
 
 
 async def _ui_command(
@@ -390,47 +377,37 @@ def register(mcp: FastMCP) -> None:
     ) -> dict[str, Any]:
         """Execute the workflow currently displayed on the ComfyUI canvas.
 
+        Uses ComfyUI's native graphToPrompt() to convert the canvas to API format,
+        which correctly includes all widget values for every node (GetNode, SetNode,
+        String Literal, Int Literal, etc.).
+
         Returns a job_id that can be used with get_job_status and get_job_result.
         If validation fails, returns the detailed error (node_id, node_type, message).
 
         Args:
             instance: Target ComfyUI instance name.
         """
-        # Step 1: Get the current workflow from the canvas via bridge
-        graph_data = await _ui_command("get_current_workflow", instance=instance)
-        if "error" in graph_data:
-            return graph_data
+        # Step 1: Get the API-format prompt from the canvas via graphToPrompt()
+        prompt_data = await _ui_command("get_api_prompt", instance=instance)
+        if "error" in prompt_data:
+            return prompt_data
 
-        workflow = graph_data.get("workflow", {})
-        if not workflow:
-            return {"error": "Canvas is empty or workflow could not be serialized"}
+        api_prompt = prompt_data.get("prompt", {})
+        if not api_prompt:
+            return {"error": "Canvas is empty or graphToPrompt() returned no output"}
 
-        # Step 2: Convert UI format to API format if needed, then submit via /prompt
+        # Step 2: Submit to /prompt
         config = load_config()
         client = ComfyUIClient(get_instance_url(config, instance))
         try:
             import uuid
             client_id = str(uuid.uuid4())
 
-            # The graph from app.graph.serialize() is in UI format.
-            # ComfyUI's /prompt expects API format. We submit via the
-            # special /api/prompt endpoint which handles both.
-            # But first try the output from the canvas as-is.
-            try:
-                result = await client.post("/prompt", data={
-                    "prompt": workflow,
-                    "client_id": client_id,
-                })
-            except Exception as exc:
-                # Try extracting API-format workflow from the UI-format
-                api_workflow = _extract_api_workflow(workflow)
-                if api_workflow:
-                    result = await client.post("/prompt", data={
-                        "prompt": api_workflow,
-                        "client_id": client_id,
-                    })
-                else:
-                    return {"error": f"Failed to submit workflow: {exc}"}
+            result = await client.post("/prompt", data={
+                "prompt": api_prompt,
+                "client_id": client_id,
+                "extra_data": {"extra_pnginfo": {"workflow": prompt_data.get("workflow", {})}},
+            })
 
             # Check for validation errors
             if isinstance(result, dict):
