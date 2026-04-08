@@ -11,7 +11,7 @@
     <a href="#configuration">Configuration</a>
   </p>
   <p align="center">
-    <img src="https://img.shields.io/badge/version-0.4.0-blueviolet" alt="Version 0.3.0">
+    <img src="https://img.shields.io/badge/version-0.5.0-blueviolet" alt="Version 0.3.0">
     <img src="https://img.shields.io/badge/tools-77-blue" alt="74 MCP Tools">
     <img src="https://img.shields.io/badge/python-3.10+-green" alt="Python 3.10+">
     <img src="https://img.shields.io/badge/protocol-MCP-orange" alt="Model Context Protocol">

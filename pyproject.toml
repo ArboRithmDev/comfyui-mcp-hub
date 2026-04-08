@@ -1,6 +1,6 @@
 [project]
 name = "comfyui-mcp-hub"
-version = "0.4.0"
+version = "0.5.0"
 description = "MCP server and control panel for ComfyUI — 77 tools for AI agent integration"
 license = {text = "AGPL-3.0-or-later"}
 readme = "README.md"
