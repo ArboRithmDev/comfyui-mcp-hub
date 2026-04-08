@@ -11,6 +11,7 @@
     <a href="#configuration">Configuration</a>
   </p>
   <p align="center">
+    <img src="https://img.shields.io/badge/version-0.2.0-blueviolet" alt="Version 0.2.0">
     <img src="https://img.shields.io/badge/tools-61-blue" alt="61 MCP Tools">
     <img src="https://img.shields.io/badge/python-3.10+-green" alt="Python 3.10+">
     <img src="https://img.shields.io/badge/protocol-MCP-orange" alt="Model Context Protocol">
@@ -373,6 +374,33 @@ MCP Hub also works with standalone ComfyUI using legacy Manager routes and the c
 | Git | For installation |
 
 Python dependencies (`mcp`, `aiohttp`, `websockets`) are **installed automatically** on first startup.
+
+---
+
+## Changelog
+
+### v0.2.0
+
+- **CivitAI & HuggingFace integration** &mdash; search models, download with progress tracking, NSFW filtering, hash-based exact matching
+- **Resolver pipeline** &mdash; `resolve_workflow` auto-detects and fixes missing nodes, models, and Python dependency conflicts (three-tier: auto &rarr; diagnose &rarr; propose)
+- **Activity log** &mdash; real-time tracking of all agent actions with toast notifications and download progress bars in the UI
+- **UI Bridge** &mdash; bidirectional canvas control: read/write graph, add/remove/connect nodes, capture screenshots, execute workflows, get previews
+- **Layout tools** &mdash; `move_node`, `resize_node`, `collapse_node`, `align_nodes`, `fit_view`, `refresh_ui`
+- **Debugging tools** &mdash; `get_last_error` (validation + execution errors with node detail), `get_logs` (grouped tracebacks, stderr capture)
+- **`execute_current` fixed** &mdash; uses `app.queuePrompt()` for full extension hook support (cg-use-everywhere, rgthree GetNode/SetNode)
+- **ComfyUI Desktop compatibility** &mdash; Manager V2 auto-detection (`/v2/` routes), empty response handling, config auto-sync
+- **`list_models` extended** &mdash; supports any model directory (`ultralytics/bbox`, `text_encoders`, `LLM`, etc.) via filesystem fallback
+- **`list_model_types`** &mdash; discover all model directories with file counts
+- **Settings tab** &mdash; CivitAI/HuggingFace tokens, NSFW filter, auto-resolve toggle
+- **Autostart** &mdash; MCP server starts with ComfyUI, clean shutdown on exit
+
+### v0.1.0
+
+- Initial release: 32 tools across 6 domains
+- Introspection, workflows, generation, models, packages, instances
+- Sidebar panel with Server, Tools, AI Clients, Instances tabs
+- Auto-detection and configuration of 10 AI CLIs
+- Auto-install dependencies on startup
 
 ---
 
