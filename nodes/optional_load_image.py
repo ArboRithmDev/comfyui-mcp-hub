@@ -12,8 +12,9 @@ import node_helpers
 import comfy.model_management
 
 # Sentinel size used to signal "no image" to downstream nodes.
+# Must be large enough to survive resize/sharpen/padding operations (min 8px).
 # OptionalMergeImages filters these out automatically.
-EMPTY_SIGNAL_SIZE = 1
+EMPTY_SIGNAL_SIZE = 8
 
 
 def _make_empty_signal():
