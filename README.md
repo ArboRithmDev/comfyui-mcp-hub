@@ -15,7 +15,7 @@
     <img src="https://img.shields.io/badge/tools-74-blue" alt="74 MCP Tools">
     <img src="https://img.shields.io/badge/python-3.10+-green" alt="Python 3.10+">
     <img src="https://img.shields.io/badge/protocol-MCP-orange" alt="Model Context Protocol">
-    <img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT License">
+    <img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="AGPL-3.0 License">
   </p>
 </p>
 
@@ -30,7 +30,7 @@ MCP Hub is a [Model Context Protocol](https://modelcontextprotocol.io/) server p
 ## Highlights
 
 - **Canvas control** &mdash; AI agents can read the graph, add/remove/connect nodes, update parameters, capture screenshots, execute workflows, and arrange the layout (move, align, collapse, resize, fit view) directly on the canvas.
-- **CivitAI & HuggingFace integration** &mdash; Search models, download with progress tracking, NSFW filtering, hash-based exact matching.
+- **CivitAI & HuggingFace integration** &mdash; Search models, download with progress tracking, content-safety filtering, hash-based exact matching.
 - **Smart resolver** &mdash; Submit any workflow: MCP Hub automatically detects missing nodes, missing models, and broken Python dependencies, then fixes them.
 - **Multi-instance** &mdash; Register ComfyUI instances across your LAN and route any command to any machine.
 - **Activity tracking** &mdash; Real-time log of every agent action, download progress bars, and toast notifications in the ComfyUI UI.
@@ -143,7 +143,7 @@ MCP Hub adds a sidebar panel to ComfyUI Desktop:
 | **Tools** | Enable/disable tool categories per domain |
 | **AI Clients** | Detected clients with install status, one-click configuration |
 | **Instances** | Manage ComfyUI instances on your LAN |
-| **Settings** | API tokens (CivitAI, HuggingFace), NSFW filter level, auto-resolve toggle |
+| **Settings** | API tokens (CivitAI, HuggingFace), content-safety filter level, auto-resolve toggle |
 
 ---
 
@@ -223,7 +223,7 @@ MCP Hub adds a sidebar panel to ComfyUI Desktop:
 | Tool | Description |
 |------|-------------|
 | `resolve_workflow` | Full pipeline: missing nodes &rarr; install, missing models &rarr; find, broken deps &rarr; fix |
-| `search_civitai` | Search CivitAI with type filter and NSFW control |
+| `search_civitai` | Search CivitAI with type filter and safety control |
 | `download_civitai` | Download with real-time progress tracking |
 | `find_missing_models` | Hash lookup (exact) &rarr; name search (fuzzy) &rarr; interactive candidates |
 | `fix_dependencies` | Three-tier: auto-fix &rarr; diagnose root cause &rarr; propose solutions |
@@ -365,7 +365,7 @@ MCP Hub generates `mcp_server/hub_config.json` on first run (git-ignored &mdash;
   "autostart": true,
   "civitai_token": "",
   "huggingface_token": "",
-  "nsfw_filter": "soft",
+  "safety_filter": "soft",
   "auto_resolve_on_execute": true,
   "enabled_tools": {
     "introspection": true,
@@ -383,7 +383,7 @@ MCP Hub generates `mcp_server/hub_config.json` on first run (git-ignored &mdash;
 
 The config **auto-syncs** with ComfyUI's actual address and port on every startup. No manual editing needed.
 
-### NSFW Filtering
+### Content-Safety Filtering
 
 CivitAI results respect your preference:
 
@@ -440,7 +440,7 @@ Python dependencies (`mcp`, `aiohttp`, `websockets`) are **installed automatical
 
 ### v0.2.0
 
-- **CivitAI & HuggingFace integration** &mdash; search models, download with progress tracking, NSFW filtering, hash-based exact matching
+- **CivitAI & HuggingFace integration** &mdash; search models, download with progress tracking, content-safety filtering, hash-based exact matching
 - **Resolver pipeline** &mdash; `resolve_workflow` auto-detects and fixes missing nodes, models, and Python dependency conflicts (three-tier: auto &rarr; diagnose &rarr; propose)
 - **Activity log** &mdash; real-time tracking of all agent actions with toast notifications and download progress bars in the UI
 - **UI Bridge** &mdash; bidirectional canvas control: read/write graph, add/remove/connect nodes, capture screenshots, execute workflows, get previews
@@ -450,7 +450,7 @@ Python dependencies (`mcp`, `aiohttp`, `websockets`) are **installed automatical
 - **ComfyUI Desktop compatibility** &mdash; Manager V2 auto-detection (`/v2/` routes), empty response handling, config auto-sync
 - **`list_models` extended** &mdash; supports any model directory (`ultralytics/bbox`, `text_encoders`, `LLM`, etc.) via filesystem fallback
 - **`list_model_types`** &mdash; discover all model directories with file counts
-- **Settings tab** &mdash; CivitAI/HuggingFace tokens, NSFW filter, auto-resolve toggle
+- **Settings tab** &mdash; CivitAI/HuggingFace tokens, content-safety filter, auto-resolve toggle
 - **Autostart** &mdash; MCP server starts with ComfyUI, clean shutdown on exit
 
 ### v0.1.0
