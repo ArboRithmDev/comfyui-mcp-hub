@@ -1,6 +1,7 @@
 """OptionalMergeImages — Merge up to 5 image sources, all optional.
 
-If no image is connected or all inputs are blocked, silently blocks downstream.
+Uses lazy evaluation: only requests inputs that are actually connected.
+If no image is provided, silently blocks downstream execution.
 If only some inputs are connected, merges only the available images.
 """
 
@@ -11,6 +12,8 @@ import comfy.utils
 class OptionalMergeImages:
     """Merge multiple image sources. All inputs are optional — blocks downstream if none provided."""
 
+    _OPTIONAL_INPUTS = ("image_1", "image_2", "image_3", "image_4", "image_5")
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -18,11 +21,11 @@ class OptionalMergeImages:
                 "method": (["nearest-exact", "bilinear", "area", "bicubic", "lanczos"], {"default": "lanczos"}),
             },
             "optional": {
-                "image_1": ("IMAGE",),
-                "image_2": ("IMAGE",),
-                "image_3": ("IMAGE",),
-                "image_4": ("IMAGE",),
-                "image_5": ("IMAGE",),
+                "image_1": ("IMAGE", {"lazy": True}),
+                "image_2": ("IMAGE", {"lazy": True}),
+                "image_3": ("IMAGE", {"lazy": True}),
+                "image_4": ("IMAGE", {"lazy": True}),
+                "image_5": ("IMAGE", {"lazy": True}),
             },
         }
 
@@ -30,8 +33,24 @@ class OptionalMergeImages:
     FUNCTION = "execute"
     CATEGORY = "image"
 
-    def execute(self, method, image_1=None, image_2=None, image_3=None, image_4=None, image_5=None):
-        images = [img for img in (image_1, image_2, image_3, image_4, image_5) if img is not None]
+    def check_lazy_status(self, method, **kwargs):
+        """Only request evaluation of inputs that are not yet resolved."""
+        needed = []
+        for name in self._OPTIONAL_INPUTS:
+            if name not in kwargs:
+                # Not connected — skip
+                continue
+            if kwargs[name] is None:
+                # Connected but not yet evaluated — request it
+                needed.append(name)
+        return needed
+
+    def execute(self, method, **kwargs):
+        images = []
+        for name in self._OPTIONAL_INPUTS:
+            img = kwargs.get(name)
+            if img is not None:
+                images.append(img)
 
         if not images:
             from comfy_execution.graph_utils import ExecutionBlocker
