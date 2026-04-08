@@ -6,13 +6,13 @@
   <p align="center">
     <a href="#quick-start">Quick Start</a> &nbsp;&bull;&nbsp;
     <a href="#supported-ai-clients">Supported Clients</a> &nbsp;&bull;&nbsp;
-    <a href="#all-61-tools">All 61 Tools</a> &nbsp;&bull;&nbsp;
+    <a href="#all-61-tools">All 77 Tools</a> &nbsp;&bull;&nbsp;
     <a href="#architecture">Architecture</a> &nbsp;&bull;&nbsp;
     <a href="#configuration">Configuration</a>
   </p>
   <p align="center">
-    <img src="https://img.shields.io/badge/version-0.3.0-blueviolet" alt="Version 0.3.0">
-    <img src="https://img.shields.io/badge/tools-74-blue" alt="74 MCP Tools">
+    <img src="https://img.shields.io/badge/version-0.4.0-blueviolet" alt="Version 0.3.0">
+    <img src="https://img.shields.io/badge/tools-77-blue" alt="74 MCP Tools">
     <img src="https://img.shields.io/badge/python-3.10+-green" alt="Python 3.10+">
     <img src="https://img.shields.io/badge/protocol-MCP-orange" alt="Model Context Protocol">
     <img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="AGPL-3.0 License">
@@ -21,7 +21,7 @@
 
 ---
 
-MCP Hub is a [Model Context Protocol](https://modelcontextprotocol.io/) server packaged as a ComfyUI custom node. It exposes **74 tools** that let any MCP-compatible AI assistant — Claude, Gemini, Codex, Cursor, and more — interact with your local ComfyUI instance: inspect workflows, generate images, manage models, install packages, and manipulate the canvas in real time.
+MCP Hub is a [Model Context Protocol](https://modelcontextprotocol.io/) server packaged as a ComfyUI custom node. It exposes **77 tools** that let any MCP-compatible AI assistant — Claude, Gemini, Codex, Cursor, and more — interact with your local ComfyUI instance: inspect workflows, generate images, manage models, install packages, and manipulate the canvas in real time.
 
 **One install. Zero cloud dependency. Fully local.**
 
@@ -147,7 +147,7 @@ MCP Hub adds a sidebar panel to ComfyUI Desktop:
 
 ---
 
-## All 61 Tools
+## All 77 Tools
 
 <details>
 <summary><strong>Introspection</strong> &mdash; 5 tools</summary>
@@ -341,7 +341,7 @@ MCP Hub adds a sidebar panel to ComfyUI Desktop:
                   │ subprocess (stdio)
 ┌─────────────────▼────────────────────┐
 │    MCP Server (separate process)     │
-│    74 tools · 4 resources            │
+│    77 tools · 4 resources            │
 │    Auto-detects Manager v1/v2 API    │
 └────────┬────────────────┬────────────┘
          │                │
@@ -436,7 +436,7 @@ Python dependencies (`mcp`, `aiohttp`, `websockets`) are **installed automatical
 - **Git versioning** &mdash; init, commit, diff, log, restore, remote push/pull for the workflows directory
 - **Combo tools** &mdash; `get_overview`, `build_workflow`, `batch_update_nodes`, `setup_and_execute` to reduce round-trips for interaction-limited clients (Gemini, etc.)
 - **Pagination** &mdash; `list_nodes` now paginated (limit/offset) to avoid context flooding
-- **74 MCP tools total**
+- **77 MCP tools total**
 
 ### v0.2.0
 
