@@ -109,12 +109,15 @@ if _running_in_comfyui():
 # ── ComfyUI registration ─────────────────────────────────────────────
 
 from .nodes.optional_load_image import OptionalLoadImage
+from .nodes.optional_merge_images import OptionalMergeImages
 
 NODE_CLASS_MAPPINGS = {
     "MCPHub_OptionalLoadImage": OptionalLoadImage,
+    "MCPHub_OptionalMergeImages": OptionalMergeImages,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "MCPHub_OptionalLoadImage": "Load Image (Optional)",
+    "MCPHub_OptionalMergeImages": "Merge Images (Optional)",
 }
 WEB_DIRECTORY = "./web"
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
