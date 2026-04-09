@@ -10,7 +10,7 @@ from pathlib import Path
 
 # Register a fake root package so Python won't load the real __init__.py
 _root = Path(__file__).parent
-_pkg_name = _root.name  # "comfyui-mcp-hub"
+_pkg_name = _root.name  # "comfyui-arbo-mcp-hub"
 
 # Ensure project root is on sys.path for direct mcp_server imports
 if str(_root) not in sys.path:

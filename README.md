@@ -11,7 +11,7 @@
     <a href="#configuration">Configuration</a>
   </p>
   <p align="center">
-    <img src="https://img.shields.io/badge/version-0.5.0-blueviolet" alt="Version 0.3.0">
+    <img src="https://img.shields.io/badge/version-0.6.0-blueviolet" alt="Version 0.3.0">
     <img src="https://img.shields.io/badge/tools-77-blue" alt="74 MCP Tools">
     <img src="https://img.shields.io/badge/python-3.10+-green" alt="Python 3.10+">
     <img src="https://img.shields.io/badge/protocol-MCP-orange" alt="Model Context Protocol">
@@ -50,12 +50,12 @@ Search for **"MCP Hub"** in ComfyUI-Manager's custom node browser, then click In
 
 ```bash
 cd /path/to/ComfyUI/custom_nodes
-git clone https://github.com/ArboRithmDev/comfyui-mcp-hub.git
+git clone https://github.com/ArboRithmDev/comfyui-arbo-mcp-hub.git
 ```
 
 **Option C &mdash; Download ZIP**
 
-Download the [latest release](https://github.com/ArboRithmDev/comfyui-mcp-hub/releases), extract into `ComfyUI/custom_nodes/comfyui-mcp-hub/`.
+Download the [latest release](https://github.com/ArboRithmDev/comfyui-arbo-mcp-hub/releases), extract into `ComfyUI/custom_nodes/comfyui-arbo-mcp-hub/`.
 
 ---
 
@@ -78,9 +78,9 @@ Add this to your MCP client's config file:
 ```json
 {
   "mcpServers": {
-    "comfyui-mcp-hub": {
+    "comfyui-arbo-mcp-hub": {
       "command": "/path/to/ComfyUI/.venv/bin/python",
-      "args": ["/path/to/ComfyUI/custom_nodes/comfyui-mcp-hub/mcp_server/main.py"]
+      "args": ["/path/to/ComfyUI/custom_nodes/comfyui-arbo-mcp-hub/mcp_server/main.py"]
     }
   }
 }
@@ -89,9 +89,9 @@ Add this to your MCP client's config file:
 For TOML-based clients (Codex, Mistral Vibe):
 
 ```toml
-[mcp_servers.comfyui-mcp-hub]
+[mcp_servers.comfyui-arbo-mcp-hub]
 command = "/path/to/ComfyUI/.venv/bin/python"
-args = ["/path/to/ComfyUI/custom_nodes/comfyui-mcp-hub/mcp_server/main.py"]
+args = ["/path/to/ComfyUI/custom_nodes/comfyui-arbo-mcp-hub/mcp_server/main.py"]
 ```
 
 </details>
@@ -465,7 +465,7 @@ Python dependencies (`mcp`, `aiohttp`, `websockets`) are **installed automatical
 
 ## Contributing
 
-Issues and pull requests are welcome at [github.com/ArboRithmDev/comfyui-mcp-hub](https://github.com/ArboRithmDev/comfyui-mcp-hub).
+Issues and pull requests are welcome at [github.com/ArboRithmDev/comfyui-arbo-mcp-hub](https://github.com/ArboRithmDev/comfyui-arbo-mcp-hub).
 
 ## License
 

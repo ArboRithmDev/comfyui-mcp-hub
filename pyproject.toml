@@ -1,6 +1,6 @@
 [project]
-name = "comfyui-mcp-hub"
-version = "0.5.0"
+name = "comfyui-arbo-mcp-hub"
+version = "0.6.0"
 description = "MCP server and control panel for ComfyUI — 77 tools for AI agent integration"
 license = {text = "AGPL-3.0-or-later"}
 readme = "README.md"
@@ -23,13 +23,13 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ArboRithmDev/comfyui-mcp-hub"
-Repository = "https://github.com/ArboRithmDev/comfyui-mcp-hub"
-Issues = "https://github.com/ArboRithmDev/comfyui-mcp-hub/issues"
+Homepage = "https://github.com/ArboRithmDev/comfyui-arbo-mcp-hub"
+Repository = "https://github.com/ArboRithmDev/comfyui-arbo-mcp-hub"
+Issues = "https://github.com/ArboRithmDev/comfyui-arbo-mcp-hub/issues"
 
 [tool.comfy]
 PublisherId = "arborithmdev"
-DisplayName = "MCP Hub"
+DisplayName = "Arbo MCP Hub"
 Description = "Give AI agents full control over ComfyUI — 77 MCP tools for canvas control, CivitAI, workflow management, and more"
 Icon = ""
 

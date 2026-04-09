@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 _REPO_DIR = Path(__file__).parent.parent
-_GITHUB_REPO = "ArboRithmDev/comfyui-mcp-hub"
+_GITHUB_REPO = "ArboRithmDev/comfyui-arbo-mcp-hub"
 _RELEASES_URL = f"https://api.github.com/repos/{_GITHUB_REPO}/releases"
 
 
@@ -44,7 +44,7 @@ def fetch_releases() -> list[dict[str, Any]]:
     try:
         req = urllib.request.Request(
             _RELEASES_URL,
-            headers={"Accept": "application/vnd.github+json", "User-Agent": "comfyui-mcp-hub"},
+            headers={"Accept": "application/vnd.github+json", "User-Agent": "comfyui-arbo-mcp-hub"},
         )
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode())

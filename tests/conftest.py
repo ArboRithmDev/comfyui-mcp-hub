@@ -16,7 +16,7 @@ import pytest
 # We pre-register a stub module so Python never attempts to load it when
 # resolving `mcp_server` as a sub-package.
 _PROJECT_ROOT = Path(__file__).parent.parent
-_ROOT_PKG_NAME = _PROJECT_ROOT.name  # "comfyui-mcp-hub" — not a valid Python ident
+_ROOT_PKG_NAME = _PROJECT_ROOT.name  # "comfyui-arbo-mcp-hub" — not a valid Python ident
 
 # Ensure the project root is on sys.path so `import mcp_server` works
 if str(_PROJECT_ROOT) not in sys.path:

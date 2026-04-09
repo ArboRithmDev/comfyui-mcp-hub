@@ -47,7 +47,7 @@ class CLIDefinition:
         binary_names: list[str],
         config_paths: list[Path],
         mcp_key: str,
-        server_key: str = "comfyui-mcp-hub",
+        server_key: str = "comfyui-arbo-mcp-hub",
         note: str = "",
     ):
         self.name = name
@@ -173,10 +173,10 @@ class TOMLCLIDefinition(CLIDefinition):
     def _check_configured(self, path: Path) -> bool:
         content = path.read_text()
         if self.toml_style == "array":
-            # Mistral Vibe: [[mcp_servers]] with name = "comfyui-mcp-hub"
+            # Mistral Vibe: [[mcp_servers]] with name = "comfyui-arbo-mcp-hub"
             return f'name = "{self.server_key}"' in content
         else:
-            # Codex/Gemini: [mcp_servers.comfyui-mcp-hub] or "comfyui-mcp-hub" in mcpServers
+            # Codex/Gemini: [mcp_servers.comfyui-arbo-mcp-hub] or "comfyui-arbo-mcp-hub" in mcpServers
             return f"[{self.mcp_key}.{self.server_key}]" in content or f'"{self.server_key}"' in content
 
     def _write_config(self, path: Path) -> None:
@@ -208,7 +208,7 @@ class TOMLCLIDefinition(CLIDefinition):
                 f'args = ["{_mcp_server_main()}"]\n'
             )
         else:
-            # Codex/Gemini section format: [mcp_servers.comfyui-mcp-hub]
+            # Codex/Gemini section format: [mcp_servers.comfyui-arbo-mcp-hub]
             return (
                 f"[{self.mcp_key}.{self.server_key}]\n"
                 f'command = "{_python_exe()}"\n'
@@ -219,7 +219,7 @@ class TOMLCLIDefinition(CLIDefinition):
         content = path.read_text()
 
         if self.toml_style == "array":
-            # Remove [[mcp_servers]] block containing name = "comfyui-mcp-hub"
+            # Remove [[mcp_servers]] block containing name = "comfyui-arbo-mcp-hub"
             pattern = (
                 r'\[\[' + re.escape(self.mcp_key) + r'\]\]\s*\n'
                 r'(?:(?!\[\[).)*?'
@@ -228,7 +228,7 @@ class TOMLCLIDefinition(CLIDefinition):
             )
             content = re.sub(pattern, "", content, flags=re.DOTALL)
         else:
-            # Remove [mcp_servers.comfyui-mcp-hub] section
+            # Remove [mcp_servers.comfyui-arbo-mcp-hub] section
             pattern = (
                 r'\[' + re.escape(self.mcp_key) + r'\.' + re.escape(self.server_key) + r'\]\s*\n'
                 r'(?:(?!\[).)*'
