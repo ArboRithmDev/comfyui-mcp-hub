@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-arbo-mcp-hub"
-version = "0.6.0"
-description = "MCP server and control panel for ComfyUI — 77 tools for AI agent integration"
+version = "0.7.0"
+description = "MCP server and control panel for ComfyUI — 79 tools for AI agent integration"
 license = {text = "AGPL-3.0-or-later"}
 readme = "README.md"
 requires-python = ">=3.10"
@@ -30,7 +30,7 @@ Issues = "https://github.com/ArboRithmDev/comfyui-arbo-mcp-hub/issues"
 [tool.comfy]
 PublisherId = "arborithmdev"
 DisplayName = "Arbo MCP Hub"
-Description = "Give AI agents full control over ComfyUI — 77 MCP tools for canvas control, CivitAI, workflow management, and more"
+Description = "Give AI agents full control over ComfyUI — 79 MCP tools for canvas control, CivitAI, workflow management, and more"
 Icon = ""
 
 [tool.pytest.ini_options]
